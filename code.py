@@ -1,62 +1,54 @@
-# SPDX-FileCopyrightText: 2018 Kattni Rembor for Adafruit Industries
-#
-# SPDX-License-Identifier: MIT
-
-"""CircuitPython Essentials NeoPixel example"""
 import time
 import board
 from rainbowio import colorwheel
 import neopixel
+import rotaryio
+import digitalio
+
+encoder = rotaryio.IncrementalEncoder(board.GP17, board.GP16)
+
+button = digitalio.DigitalInOut(board.GP18)
+button.direction = digitalio.Direction.INPUT
+button.pull = digitalio.Pull.UP
 
 pixel_pin = board.GP21
 num_pixels = 8
 
-pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.03, auto_write=False)
+brightness=0.05
 
+pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=brightness, auto_write=False)
 
-def color_chase(color, wait):
-    for i in range(num_pixels):
-        pixels[i] = color
-        time.sleep(wait)
-        pixels.show()
-    time.sleep(0.5)
+YELLOW = (255, 150, 40)
 
+last_position = encoder.position
+button_state = None
 
-def rainbow_cycle(wait):
-    for j in range(255):
-        for i in range(num_pixels):
-            rc_index = (i * 256 // num_pixels) + j
-            pixels[i] = colorwheel(rc_index & 255)
-        pixels.show()
-        time.sleep(wait)
-
-
-
-RED = (255, 0, 0)
-YELLOW = (255, 150, 0)
-GREEN = (0, 255, 0)
-CYAN = (0, 255, 255)
-BLUE = (0, 0, 255)
-PURPLE = (180, 0, 255)
+pixels.fill(YELLOW)
+pixels.show()
 
 while True:
-    pixels.fill(RED)
-    pixels.show()
-    # Increase or decrease to change the speed of the solid color change.
-    time.sleep(1)
-    pixels.fill(GREEN)
-    pixels.show()
-    time.sleep(1)
-    pixels.fill(BLUE)
-    pixels.show()
-    time.sleep(1)
-    
-    color_chase(RED, 0.1)  # Increase the number to slow down the color chase
-    color_chase(YELLOW, 0.1)
-    color_chase(GREEN, 0.1)
-    color_chase(CYAN, 0.1)
-    color_chase(BLUE, 0.1)
-    color_chase(PURPLE, 0.1)
-
-    rainbow_cycle(0)  # Increase the number to slow down the rainbow
-    
+    current_position = encoder.position
+    position_change = current_position - last_position
+    if position_change > 0:
+        for _ in range(position_change):
+            if brightness < 0.99:
+                brightness=brightness+0.01
+                pixels.brightness=brightness
+                pixels.show()
+                print(str(brightness))
+    elif position_change < 0:
+        for _ in range(-position_change):
+            if brightness > 0.02:
+                brightness=brightness-0.01
+                pixels.brightness=brightness
+                pixels.show()
+                print(str(brightness))
+    last_position = current_position
+    if not button.value and button_state is None:
+        button_state = "pressed"
+    if button.value and button_state == "pressed":
+        print("Button pressed.")
+        brightness=0.00
+        pixels.brightness=brightness
+        pixels.show()
+        button_state = None
