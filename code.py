@@ -18,7 +18,7 @@ brightness=0.05
 
 pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=brightness, auto_write=False)
 
-YELLOW = (255, 150, 40)
+YELLOW = (200, 120, 00)
 
 last_position = encoder.position
 button_state = None
